@@ -37,3 +37,7 @@ binary 資源傳輸、路徑授權與實際通訊尚未驗證。
 - https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/files.rs#L8-L16
 - https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/files.rs#L48-L91
 - https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/remote.rs#L758-L769
+
+## 後續原始碼查核：machine.exec
+
+App 的遠端 exec 透過 `hc exec --json --on`，Core 回傳 base64 並帶 `truncated`；App wrapper 的 local stdout 限制為 8 MiB 且回傳介面未傳遞 truncated 旗標。Mod 的 exec 另外以 lossy UTF-8 解碼。因此不能把任意 binary 直接交給 Mod，或假設過大輸出會明確失敗。可研究在遠端分段編碼並逐段校驗長度，但尚未實作或測試。[App 來源](https://github.com/herdrdev/herdr-app/blob/7fe7ac34fef8a3ee76cb5d2f17bc8d6331e50bd8/src/mods.rs#L754-L835)；[Core result](https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/api/types.rs#L627-L642)。
