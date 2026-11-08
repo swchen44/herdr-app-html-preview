@@ -1,9 +1,9 @@
 # Herdr App Remote Live Preview — Research / PoC / Implementation Handoff
 
-> Status: **BRAINSTORMING / NOT APPROVED FOR PRODUCTION**  
-> Date: 2026-11-08  
-> Language: Traditional Chinese  
-> Intended executor: MakerOS 上的 Codex / ChatGPT Coding Agent  
+> Status: **BRAINSTORMING / NOT APPROVED FOR PRODUCTION**
+> Date: 2026-11-08
+> Language: Traditional Chinese
+> Intended executor: MakerOS 上的 Codex / ChatGPT Coding Agent
 > Project name (provisional): `herdr-remote-preview` — **GitHub Repo 名稱尚待使用者確認**
 
 ## 0. 交接摘要與核心原則
