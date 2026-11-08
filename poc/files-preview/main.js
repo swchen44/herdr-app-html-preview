@@ -1,7 +1,9 @@
 // A lazy file browser for the focused pane's folder, with bounded read-only previews.
-import { View, div, svg } from "gpui-kit";
+import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, TextView } from "gpui-base";
-import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window } from "herdr";
+import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window, pickFolder, appHome } from "herdr";
+import { openChrome, saveCopy } from "./actions.js";
+import { renderMedia } from "./media.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -40,7 +42,7 @@ async function directory(path, on) {
 
 export default class Files extends View {
   init(_props, cx) {
-    this.saved = new Map(); this.htmlText = null; this.previewMode = false;
+    this.menuPath = null; this.actionMessage = null; this.saved = new Map(); this.htmlText = null; this.previewMode = false;
     this.entries = new Map(); this.folders = new Set(); this.pending = new Set(); this.marks = {};
     this.refresh(cx);
     cx.timer.every(10000, cx => this.refresh(cx));
@@ -128,11 +130,17 @@ export default class Files extends View {
   }
 
   show(path, cx) {
-    this.code?.release(); this.code = null; this.file = path; this.fileError = null; this.htmlText = null; this.previewMode = false;
+    this.code?.release(); this.code = null; this.mediaPath = null; this.mediaIsPdf = false; this.file = path; this.fileError = null; this.htmlText = null; this.previewMode = false;
     if (!path || !cx) return;
     const context = this.context, root = this.root, on = this.on;
     cx.spawn(async cx => {
       try {
+        if (/\.(png|jpe?g|gif|webp|bmp|tiff?|svg|pdf)$/i.test(path)) {
+          const pdf = /\.pdf$/i.test(path);
+          const media = await renderMedia(exec, appHome(), `${root}/${path}`, on, pdf);
+          if (this.file !== path || !this.current(context)) return;
+          this.mediaPath = media; this.mediaIsPdf = pdf; return;
+        }
         const text = await readTextFile(`${root}/${path}`, { on });
         if (this.file !== path || !this.current(context)) return;
         if (text === null) { this.fileError = "This file is no longer available"; return; }
@@ -148,6 +156,19 @@ export default class Files extends View {
     });
   }
 
+  action(kind, path, cx) {
+    const context = this.context, absolute = `${this.root}/${path}`, on = this.on;
+    this.menuPath = null;
+    if (kind === "preview") { this.show(path, cx); this.previewMode = true; return; }
+    cx.spawn(async cx => {
+      try {
+        const result = kind === "chrome" ? await openChrome(exec, absolute, on) : await saveCopy(exec, pickFolder, absolute, on);
+        if (this.current(context)) this.actionMessage = kind === "chrome" ? "Opened in Chrome" : result ? "Saved copy" : "Save cancelled";
+      } catch (e) { if (this.current(context)) this.actionMessage = String(e); }
+      finally { cx.notify(); }
+    });
+  }
+
   rows(prefix, depth, out, t) {
     if (out.length >= TOTAL || depth > 40) return out;
     for (const entry of this.entries.get(prefix) ?? []) {
@@ -155,6 +176,7 @@ export default class Files extends View {
       const path = prefix ? `${prefix}/${entry.name}` : entry.name, open = this.folders.has(path), mark = this.marks[`${this.root}/${path}`];
       out.push(h_flex().id(`file-${path}`).h(28).flex_none().pl(8 + depth * 18).pr(8).gap(7).items_center().rounded(7).cursor_pointer().hover(s => s.bg(t.hover))
         .on_click((_e, cx) => entry.dir ? this.toggle(path, cx) : this.show(path, cx))
+        .on_mouse_down("right", (_e, cx) => { if (!entry.dir) { cx.stop_propagation(); this.menuPath = path; this.actionMessage = null; cx.notify(); } })
         .child(entry.dir ? svg(`mods/files/chevron-${open ? "down" : "right"}.svg`).size(12).flex_none().text_color(t.dim) : div().w(12).flex_none())
         .child(svg(`mods/files/${entry.dir ? "folder" : "file"}.svg`).size(14).flex_none().text_color(t.muted))
         .child(div().flex_1().min_w(0).truncate().child(entry.name))
@@ -173,9 +195,12 @@ export default class Files extends View {
         .child(div().font_semibold().child("Files"))
         .when(this.htmlText !== null, el => el.child(div().id("preview-toggle").cursor_pointer().on_click((_e, cx) => { this.previewMode = !this.previewMode; cx.notify(); }).child(this.previewMode ? "Source" : "Preview")))
         .child(div().flex_1().min_w(0).truncate().text_right().text_size(12).text_color(t.dim).child(this.file ?? this.root?.split(/[\\/]/).pop() ?? "")))
+      .when(Boolean(this.actionMessage), el => el.child(div().p(8).text_size(12).child(this.actionMessage)))
+      .when(Boolean(this.menuPath), el => el.child(h_flex().p(6).gap(8)
+        .children([["preview", "Preview"], ["chrome", "Chrome"], ["save", "Save As"], ["cancel", "Cancel"]].map(([kind, label]) => div().id(`action-${kind}`).cursor_pointer().on_click((_e, cx) => { const path = this.menuPath; if (kind === "cancel") { this.menuPath = null; cx.notify(); } else this.action(kind, path, cx); }).child(label)))))
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6).children(this.rows("", 0, [], t))
         .when(Boolean(this.error) || !this.entries.get("")?.length, el => el.child(div().p(8).text_size(12).text_color(t.dim).child(this.error || (this.loading ? "Loading files…" : this.root ? "No files" : "No folder"))))
         .when(this.limited, el => el.child(div().p(8).text_size(11).text_color(t.dim).child("File list limited to 500 entries per folder and 5,000 total")))))
-      .when(Boolean(this.file), el => el.child(this.previewMode && this.htmlText !== null ? v_flex().id("html-preview").flex_1().min_h(0).overflow_y_scrollbar().p(12).child((/\.(md|mdx|markdown)$/i.test(this.file) ? TextView.markdown("preview-content", this.htmlText) : TextView.html("preview-content", this.htmlText)).selectable(true)) : this.code ? Editor.new(this.code).flex_1().min_h(0) : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…")));
+      .when(Boolean(this.file), el => el.child(this.mediaPath ? v_flex().flex_1().min_h(0).overflow_y_scrollbar().p(12).child(div().child(this.mediaIsPdf ? "PDF preview: first page" : "Image preview")).child(image(this.mediaPath).w(320).h(400)) : this.previewMode && this.htmlText !== null ? v_flex().id("html-preview").flex_1().min_h(0).overflow_y_scrollbar().p(12).child((/\.(md|mdx|markdown)$/i.test(this.file) ? TextView.markdown("preview-content", this.htmlText) : TextView.html("preview-content", this.htmlText)).selectable(true)) : this.code ? Editor.new(this.code).flex_1().min_h(0) : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…")));
   }
 }
