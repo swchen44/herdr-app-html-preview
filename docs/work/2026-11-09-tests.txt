@@ -1,26 +1,30 @@
-✔ Chrome gets local path as an argument (2.691834ms)
-✔ remote actions fail closed without a transfer (0.458791ms)
-✔ cancelled save does not run a copy (0.1585ms)
-✔ save surfaces copy failure (0.1225ms)
-✔ Save As copies bytes and never overwrites an existing file (165.645709ms)
-✔ stages HTML and relative CSS, JS, images and nested CSS assets (1527.250125ms)
-✔ rejects resources that are symlinks outside the Space (39.851083ms)
-✔ fails closed if a resource changes after manifest discovery (348.384292ms)
-✔ can remove only a bundle created in the mod cache (338.789666ms)
-✔ removes only old owned directories, never follows symlinks (105.007666ms)
-✔ installer creates personal layout and refuses to overwrite it (166.802083ms)
-✔ renders each PDF page with correct orientation (1128.098083ms)
-✔ real Core connection transfers remote file (486.586917ms)
-✔ real Core rejects outside symlink and oversized input (720.770166ms)
-✔ real Core stages remote HTML with CSS, JS and PNG (2469.869834ms)
-✔ transfers multiple chunks byte-for-byte and refuses escape (462.957458ms)
-✔ rejects symlinks inside the space instead of following raceable paths (40.989833ms)
-✔ removes partial staging if the remote file changes (210.694916ms)
-ℹ tests 18
+✔ Chrome gets local path as an argument (3.772792ms)
+✔ remote actions fail closed without a transfer (0.595833ms)
+✔ cancelled save does not run a copy (0.114625ms)
+✔ save surfaces copy failure (0.232041ms)
+✔ Save As copies bytes and never overwrites an existing file (209.472208ms)
+✔ stages HTML and relative CSS, JS, images and nested CSS assets (1664.860291ms)
+✔ rejects resources that are symlinks outside the Space (39.287583ms)
+✔ fails closed if a resource changes after manifest discovery (354.859334ms)
+✔ can remove only a bundle created in the mod cache (362.543541ms)
+✔ rejects ES modules and root-relative paths explicitly (78.362834ms)
+✔ removes only old owned directories, never follows symlinks (124.21275ms)
+✔ installer creates personal layout and refuses to overwrite it (1057.361334ms)
+✔ renders each PDF page with correct orientation (1021.606625ms)
+✔ renders a standalone SVG as an image (83.724ms)
+✔ real Core connection transfers remote file (558.499792ms)
+✔ real Core rejects outside symlink and oversized input (771.835125ms)
+✔ real Core stages remote HTML with CSS, JS and PNG (2556.325333ms)
+1 MiB real Core transfer: 6544 ms
+✔ real Core transfers 1 MiB fixture (6546.207833ms)
+✔ transfers multiple chunks byte-for-byte and refuses escape (472.702833ms)
+✔ rejects symlinks inside the space instead of following raceable paths (57.972291ms)
+✔ removes partial staging if the remote file changes (258.395708ms)
+ℹ tests 21
 ℹ suites 0
-ℹ pass 18
+ℹ pass 21
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 3837.945167
+ℹ duration_ms 10651.610292

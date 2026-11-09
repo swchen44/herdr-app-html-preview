@@ -15,3 +15,9 @@ test('renders each PDF page with correct orientation', async () => {
  const pages=await renderMedia(run,home,file,null,true);
  assert.equal(pages.length,2);assert.ok(pages[0].height>pages[0].width);assert.ok(pages[1].width>pages[1].height);
 });
+test('renders a standalone SVG as an image', async () => {
+ const home=await mkdtemp(join(tmpdir(),'herdr-svg-test-'));
+ const file=join(home,'fixture.svg');await writeFile(file,'<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><rect width="80" height="40" fill="red"/></svg>');
+ const pages=await renderMedia(run,home,file,null,false);
+ assert.equal(pages.length,1);assert.ok(pages[0].width>pages[0].height);
+});

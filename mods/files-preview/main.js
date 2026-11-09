@@ -174,7 +174,7 @@ export default class Files extends View {
           value: text.length > 400000 ? text.slice(0, 400000) + "\n… (file truncated)" : text,
           font_family: settings().font_family, font_size: 12,
           syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
-      } catch { if (this.file === path && this.current(context)) this.fileError = "Cannot preview this file (binary, too large, or unreadable)"; }
+      } catch (e) { if (this.file === path && this.current(context)) this.fileError = `Cannot preview: ${String(e)}`; }
       finally { cx.notify(); }
     });
   }
@@ -194,7 +194,7 @@ export default class Files extends View {
         try { result = kind === "chrome" ? await openChrome(exec, local, null) : await saveCopy(exec, pickFolder, local, null); }
         catch (e) { await discard(); throw e; }
         if (kind === "save") await discard();
-        if (this.current(context)) this.actionMessage = kind === "chrome" ? (on ? "Opened static bundle; refresh Chrome manually" : "Opened in Chrome") : result ? "Saved copy" : "Save cancelled";
+        if (this.current(context)) this.actionMessage = kind === "chrome" ? (on ? "Snapshot opened; reopen from Herdr to update" : "Opened in Chrome") : result ? "Saved copy" : "Save cancelled";
       } catch (e) { if (this.current(context)) this.actionMessage = String(e); }
       finally { cx.notify(); }
     });

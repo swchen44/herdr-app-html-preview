@@ -38,3 +38,11 @@ test('can remove only a bundle created in the mod cache', async()=>{
  await discardBundle(run,home,entry); await assert.rejects(access(entry));
  await assert.rejects(discardBundle(run,home,'/etc/hosts'));
 });
+test('rejects ES modules and root-relative paths explicitly',async()=>{
+ const t=await mkdtemp(join(tmpdir(),'herdr-bundle-unsupported-')), home=join(t,'home'), root=join(t,'space');await mkdir(home);await mkdir(root);
+ const entry=join(root,'index.html');
+ await writeFile(entry,'<script type="module" src="mod.js"></script>');
+ await assert.rejects(stageBundle(run,home,root,entry,'remote'),/modules unsupported/);
+ await writeFile(entry,'<img src="/assets/icon.png">');
+ await assert.rejects(stageBundle(run,home,root,entry,'remote'),/absolute or invalid/);
+});

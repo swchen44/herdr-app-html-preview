@@ -37,3 +37,8 @@ test('real Core stages remote HTML with CSS, JS and PNG', {skip:!machine||!root|
  assert.match(await readFile(join(dir,'assets','app.js'),'utf8'),/Clicked/);
  assert.deepEqual((await readFile(join(dir,'assets','image.png'))).subarray(0,8),Buffer.from([137,80,78,71,13,10,26,10]));
 });
+test('real Core transfers 1 MiB fixture', {skip:!machine||!root||!hc},async()=>{
+ const home=await mkdtemp(join(tmpdir(),'herdr-real-big-'));const start=Date.now();
+ const staged=await stageFile(exec,home,root,`${root}/one-mib.bin`,machine);
+ assert.equal((await readFile(staged)).length,1048576);console.log(`1 MiB real Core transfer: ${Date.now()-start} ms`);
+});

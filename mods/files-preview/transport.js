@@ -1,5 +1,5 @@
 // Temporary single-file transfer. Remote Python is required; no directory mirroring.
-const chunkSize = 32768;
+const chunkSize = 65536;
 const maxBytes = 5 * 1024 * 1024;
 const remoteScript = `import os,sys,json,base64,hashlib,stat
 root,path,offset,count=sys.argv[1:]

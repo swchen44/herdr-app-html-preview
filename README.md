@@ -2,7 +2,7 @@
 
 > **實驗原型，尚未達日常使用驗收。** 已有 macOS 本機及 SSH 遠端 Core 的部分實測；遠端 HTML 的動態資源、Chrome 自動更新、安全與安裝回復仍未完成。請勿用於敏感文件或日常 Herdr 環境。
 
-在官方 Herdr App 的個人 Files layout 中預覽 Markdown、HTML、圖片與 PDF，並提供 Preview／Source、Chrome 開啟及另存副本。HTML 的原生 TextView 是文字渲染，不執行 JavaScript，也不支援完整 CSS。Chrome 目前以獨立視窗或分頁開啟；遠端 Chrome 原型會收集 HTML 明確引用的相對 CSS、一般 JavaScript、圖片與 CSS 中的資源；動態產生的 URL、ES modules、根目錄相對 URL、`<base>` 和 Chrome 自動更新仍不支援。Chrome 的實際渲染尚未驗收。
+在官方 Herdr App 的個人 Files layout 中預覽 Markdown、HTML、圖片與 PDF，並提供 Preview／Source、Chrome 開啟及另存副本。HTML 的原生 TextView 是文字渲染，不執行 JavaScript，也不支援完整 CSS。Chrome 目前以獨立視窗或分頁開啟；遠端 Chrome 原型會收集 HTML 明確引用的相對 CSS、一般 JavaScript、圖片與 CSS 中的資源；動態產生的 URL、ES modules、根目錄相對 URL、`<base>` 和 Chrome 自動更新仍不支援。遠端內容變更後，需在 Herdr 再次選 Chrome 才會產生新快照；重新整理舊分頁不會取得遠端更新。Chrome 的實際渲染尚未驗收。
 
 ## 目前適合什麼時候用
 
