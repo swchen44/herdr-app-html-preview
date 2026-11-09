@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { openChrome, saveCopy } from '../poc/files-preview/actions.js';
+import { openChrome, saveCopy } from '../mods/files-preview/actions.js';
 
 test('Chrome gets local path as an argument', async () => {
   const calls = [];
@@ -19,4 +19,18 @@ test('cancelled save does not run a copy', async () => {
 
 test('save surfaces copy failure', async () => {
   await assert.rejects(saveCopy(async () => ({code: 1, stderr: 'exists'}), async () => '/tmp', '/tmp/x', null), /exists/);
+});
+
+test('Save As copies bytes and never overwrites an existing file', async () => {
+  const {mkdtemp,mkdir,writeFile,readFile}=await import('node:fs/promises');
+  const {tmpdir}=await import('node:os'); const {join}=await import('node:path');
+  const {spawn}=await import('node:child_process');
+  const root=await mkdtemp(join(tmpdir(),'herdr-save-test-')), dest=join(root,'destination'), src=join(root,'sample.html');
+  await mkdir(dest); await writeFile(src,'original content');
+  const run=(cmd,args)=>new Promise((resolve,reject)=>{const p=spawn(cmd,args);let stdout='',stderr='';p.stdout.on('data',b=>stdout+=b);p.stderr.on('data',b=>stderr+=b);p.on('error',reject);p.on('close',code=>resolve({code,stdout,stderr}));});
+  assert.equal(await saveCopy(run,async()=>dest,src,null),true);
+  assert.equal(await readFile(join(dest,'sample.html'),'utf8'),'original content');
+  await writeFile(src,'changed content');
+  await assert.rejects(saveCopy(run,async()=>dest,src,null));
+  assert.equal(await readFile(join(dest,'sample.html'),'utf8'),'original content');
 });

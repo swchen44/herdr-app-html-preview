@@ -4,7 +4,9 @@ import { v_flex, h_flex, Editor, EditorState, TextView } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window, pickFolder, appHome } from "herdr";
 import { openChrome, saveCopy } from "./actions.js";
 import { renderMedia } from "./media.js";
-import { stageFile } from "./transport.js";
+import { stageFile, discardStagedFile } from "./transport.js";
+import { stageBundle, discardBundle } from "./bundle.js";
+import { pruneCache } from "./cache.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -154,8 +156,11 @@ export default class Files extends View {
       try {
         if (/\.(png|jpe?g|gif|webp|bmp|tiff?|svg|pdf)$/i.test(path)) {
           const pdf = /\.pdf$/i.test(path);
+          await pruneCache(exec, appHome());
           const local = await stageFile(exec, appHome(), root, `${root}/${path}`, on);
-          const media = await renderMedia(exec, appHome(), local, null, pdf);
+          let media;
+          try { media = await renderMedia(exec, appHome(), local, null, pdf); }
+          finally { if (on) await discardStagedFile(exec, appHome(), local); }
           if (this.file !== path || !this.current(context)) return;
           this.mediaPath = media; this.mediaIsPdf = pdf; return;
         }
@@ -180,10 +185,16 @@ export default class Files extends View {
     if (kind === "preview") { this.show(path, cx); this.previewMode = true; return; }
     cx.spawn(async cx => {
       try {
-        const local = await stageFile(exec, appHome(), this.root, absolute, on);
-        if (!this.current(context)) return;
-        const result = kind === "chrome" ? await openChrome(exec, local, null) : await saveCopy(exec, pickFolder, local, null);
-        if (this.current(context)) this.actionMessage = kind === "chrome" ? "Opened in Chrome" : result ? "Saved copy" : "Save cancelled";
+        await pruneCache(exec, appHome());
+        const local = kind === "chrome" && /\.html?$/i.test(path) ? await stageBundle(exec, appHome(), this.root, absolute, on) : await stageFile(exec, appHome(), this.root, absolute, on);
+        const bundled = kind === "chrome" && /\.html?$/i.test(path);
+        const discard = async () => { if (on) { if (bundled) await discardBundle(exec, appHome(), local); else await discardStagedFile(exec, appHome(), local); } };
+        if (!this.current(context)) { await discard(); return; }
+        let result;
+        try { result = kind === "chrome" ? await openChrome(exec, local, null) : await saveCopy(exec, pickFolder, local, null); }
+        catch (e) { await discard(); throw e; }
+        if (kind === "save") await discard();
+        if (this.current(context)) this.actionMessage = kind === "chrome" ? (on ? "Opened static bundle; refresh Chrome manually" : "Opened in Chrome") : result ? "Saved copy" : "Save cancelled";
       } catch (e) { if (this.current(context)) this.actionMessage = String(e); }
       finally { cx.notify(); }
     });
@@ -217,7 +228,7 @@ export default class Files extends View {
         .child(div().flex_1().min_w(0).truncate().text_right().text_size(12).text_color(t.dim).child(this.file ?? this.root?.split(/[\\/]/).pop() ?? "")))
       .when(Boolean(this.actionMessage), el => el.child(div().p(8).text_size(12).child(this.actionMessage)))
       .when(Boolean(this.menuPath), el => el.child(h_flex().p(6).gap(8)
-        .children([["preview", "Preview"], ["chrome", "Chrome"], ["save", "Save As"], ["cancel", "Cancel"]].map(([kind, label]) => div().id(`action-${kind}`).cursor_pointer().on_click((_e, cx) => { const path = this.menuPath; if (kind === "cancel") { this.menuPath = null; cx.notify(); } else this.action(kind, path, cx); }).child(label)))))
+        .children([["preview", "Preview"], ["chrome", "Chrome"], ["save", "Save Copy"], ["cancel", "Cancel"]].map(([kind, label]) => div().id(`action-${kind}`).cursor_pointer().on_click((_e, cx) => { const path = this.menuPath; if (kind === "cancel") { this.menuPath = null; cx.notify(); } else this.action(kind, path, cx); }).child(label)))))
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6).children(this.rows("", 0, [], t))
         .when(Boolean(this.error) || !this.entries.get("")?.length, el => el.child(div().p(8).text_size(12).text_color(t.dim).child(this.error || (this.loading ? "Loading files…" : this.root ? "No files" : "No folder"))))
         .when(this.limited, el => el.child(div().p(8).text_size(11).text_color(t.dim).child("File list limited to 500 entries per folder and 5,000 total")))))
